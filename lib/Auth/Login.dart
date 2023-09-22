@@ -1,6 +1,8 @@
+// ignore_for_file: file_names
+
 import 'package:flutter/material.dart';
 import 'package:news_feed_app/Auth/SignUp.dart';
-import 'package:news_feed_app/View/HomeScreen.dart';
+import 'package:news_feed_app/Function/Firebase/FirebaseUtils.dart';
 
 class Login extends StatefulWidget {
   const Login({super.key});
@@ -10,6 +12,8 @@ class Login extends StatefulWidget {
 }
 
 class _LoginState extends State<Login> {
+  TextEditingController email=TextEditingController();
+  TextEditingController password=TextEditingController();
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -19,7 +23,6 @@ class _LoginState extends State<Login> {
           child: Padding(
             padding: const EdgeInsets.all(15.0),
             child: Column(
-
               children: [
                 Image.asset('assets/logo.png',
                   width: 200,
@@ -32,7 +35,7 @@ class _LoginState extends State<Login> {
                     children: [
 
                       TextFormField(
-
+                        controller: email,
                         keyboardType: TextInputType.emailAddress,
                         decoration: const InputDecoration(
                             hintText: 'Email'
@@ -41,6 +44,7 @@ class _LoginState extends State<Login> {
                       ),
                       const SizedBox(height: 30,),
                       TextFormField(
+                        controller: password,
                         obscureText: true,
                         keyboardType: TextInputType.visiblePassword,
                         decoration: const InputDecoration(
@@ -56,11 +60,8 @@ class _LoginState extends State<Login> {
                               },
                               child: const Text('Forgot password',style: TextStyle(
                                 fontWeight: FontWeight.bold
-                              ),)))
-
+                              ),))),
                     ],
-
-
                   )),
                 ),
 
@@ -69,9 +70,10 @@ class _LoginState extends State<Login> {
                 ),
                 InkWell(
                   onTap: (){
-                    Navigator.of(context).push(MaterialPageRoute(builder: (context) {
-                      return const HomeScreen();
-                    },));
+                   FirebaseUtils().login(context: context,
+                       email: email.text.toString(),
+                       password: password.text.toString()
+                   );
                   },
                   child: Container(
                     width: 150,

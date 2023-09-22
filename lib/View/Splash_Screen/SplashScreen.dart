@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:news_feed_app/splash_service/splash_service.dart';
 
 import '../../Auth/Login.dart';
 
@@ -17,12 +18,7 @@ class _SplashScreenState extends State<SplashScreen> {
   void initState() {
     // TODO: implement initState
     super.initState();
-    Timer(Duration(seconds: 2), () {
-      Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (context) {
-        return Login();
-      },));
-
-    });
+    splash_services().islogin(context);
   }
 
   @override
