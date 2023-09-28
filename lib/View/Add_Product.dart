@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart'as firebase_storage;
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../session_controller/session_controller.dart';
@@ -14,23 +15,12 @@ class AddProduct extends StatefulWidget {
 
 class _AddProductState extends State<AddProduct> {
 
-  // XFile? _image;
-
-  // Future<void> _pickImage() async {
-  //   final ImagePicker _picker = ImagePicker();
-  //   XFile? image = await _picker.pickImage(source: ImageSource.gallery);
-  //
-  //   setState(() {
-  //     _image = image;
-  //   });
-  // }
 
   final firestore=FirebaseFirestore.instance.collection('users');
   firebase_storage.FirebaseStorage storage=firebase_storage.FirebaseStorage.instance;
 
   final picker =ImagePicker();
   XFile? _image;
-  // XFile? get image=> _image;
 
   Future cameraimage(BuildContext context)async{
     final imagefile= await picker.pickImage(source: ImageSource.gallery);
@@ -38,28 +28,31 @@ class _AddProductState extends State<AddProduct> {
          setState(() {
           _image = imagefile;
         });
-      // _image =XFile(imagefile.path);
-      uploadimage(context);
-
     }
   }
 
-  // final picker =ImagePicker();
+  Future<String> uploadimage(BuildContext context, String formattedDate) async {
+    try {
+      FirebaseStorage storage = FirebaseStorage.instance;
+      Reference reference = storage.ref().child('news_images/$formattedDate.jpg');
 
-  void uploadimage(BuildContext context)async{
-    DateTime now = DateTime.now();
-    String formattedDate = "${now.year}-${now.month}-${now.day}_${now.hour}-${now.minute}-${now.second}";
+      UploadTask uploadTask = reference.putFile(File(_image!.path));
 
-    firebase_storage.Reference ref =firebase_storage.FirebaseStorage.instance.
-    ref('newtemplate/$formattedDate/');
+      TaskSnapshot snapshot = await uploadTask;
 
-    firebase_storage.UploadTask uploadTask=ref.putFile( File(_image!.path).absolute);
-
-    await Future.value(uploadTask);
-    newurl =await ref.getDownloadURL();
-    print('url is hereee $newurl');
+      if (snapshot.state == TaskState.success) {
+        final String downloadURL = await snapshot.ref.getDownloadURL();
+        return downloadURL;
+      } else {
+        throw Exception('Image upload failed'); // Handle the error appropriately
+      }
+    } catch (e) {
+      print('Error uploading image: $e');
+      throw e;
+    }
   }
-  late  String newurl ="";
+
+  // late  String newurl ="";
   final heading =TextEditingController();
   final description =TextEditingController();
   @override
@@ -99,7 +92,7 @@ class _AddProductState extends State<AddProduct> {
                         Text('Add Post'),
                       ],
                     )
-                        : null, // Set to null when image is selected
+                        : null,
                   ),
                 ),
                 const SizedBox(
@@ -113,7 +106,7 @@ class _AddProductState extends State<AddProduct> {
                     borderRadius: BorderRadius.circular(10),
                   ),
                   ),
-                  maxLength: 30,
+                  maxLength: 50,
                 ),
                 const SizedBox(
                   height: 10,
@@ -134,18 +127,28 @@ class _AddProductState extends State<AddProduct> {
                 ),
 
                 InkWell(
-                  onTap: (){
-                    FirebaseFirestore.instance.collection('news').doc().set({
-                      "heading": heading.text.toString(),
-                      "description" :description.text.toString(),
-                      "image": newurl.toString(),
-                      'time' : DateTime.timestamp(),
-                      'user id': sessionControlar().userid,
-                        }).then((value) {
-                          Navigator.pop(context);
-                    }).onError((error, stackTrace) {
+                  onTap: ()async{
+                    DateTime now = DateTime.now();
+                    String formattedDate = "${now.year}-${now.month}-${now.day}_${now.hour}-${now.minute}-${now.second}";
+
+                    uploadimage(context, formattedDate).then((newurl) {
+                      FirebaseFirestore.instance.collection('news').doc(formattedDate).set({
+                        'postId': formattedDate,
+                        "heading": heading.text.toString(),
+                        "description": description.text.toString(),
+                        "image": newurl.toString(),
+                        "likeCount":"0",
+                        'time': FieldValue.serverTimestamp(),
+                        'user id': sessionControlar().userid,
+                      }).then((value) {
+                        Navigator.pop(context);
+                      }).catchError((error) {
+                        print(error);
+                      });
+                    }).catchError((error) {
                       print(error);
                     });
+
                   },
                   child: Container(
                     width: 200,
